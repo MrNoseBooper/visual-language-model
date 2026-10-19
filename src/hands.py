@@ -46,7 +46,8 @@ POINT_COLOUR = (255, 255, 255)   # white dots
 
 @dataclass
 class Hand:
-    landmarks: np.ndarray   # shape (21, 3): x, y, z for each of the 21 points
+    landmarks: np.ndarray   # shape (21, 3): x, y, z for each of the 21 points (0..1 image coordinates, for drawing)
+    world_landmarks: np.ndarray  # shape (21, 3): the same points in metres around the hand's centre (for features)
     handedness: str         # "Left" or "Right" (your real hand)
     score: float            # how sure MediaPipe is about Left/Right (0..1)
     gesture: str            # built-in gesture name, or "None"
@@ -91,15 +92,18 @@ class HandTracker:
         result = self.recognizer.recognize_for_video(image, timestamp_ms)
 
         hands = []
-        for points, handedness, gestures in zip(result.hand_landmarks, result.handedness, result.gestures):
+        for points, world_points, handedness, gestures in zip(
+            result.hand_landmarks, result.hand_world_landmarks, result.handedness, result.gestures
+        ):
             landmarks = np.array([[p.x, p.y, p.z] for p in points], dtype=np.float32)
+            world_landmarks = np.array([[p.x, p.y, p.z] for p in world_points], dtype=np.float32)
             side = handedness[0]   # the most likely label
             label = side.category_name
             if SWAP_HANDEDNESS:
                 label = "Right" if label == "Left" else "Left"
             gesture = gestures[0] if gestures else None
             hands.append(Hand(
-                landmarks, label, side.score,
+                landmarks, world_landmarks, label, side.score,
                 gesture.category_name if gesture else "None",
                 gesture.score if gesture else 0.0,
             ))
