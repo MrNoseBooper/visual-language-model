@@ -1,6 +1,38 @@
+# Python virtual environment (recreate with: py -3.12 -m venv .venv; pip install -r requirements.txt)
 .venv/
+venv/
+env/
+
+# Python cache files (recreated automatically)
+__pycache__/
+*.py[cod]
+
+# Your recorded samples, downloaded/trained models and training outputs
 data/
 models/
 runs/
-__pycache__/
+*.task
+*.joblib
+*.onnx
+*.npy
+*.npz
+
+# Secrets (API keys for the optional Claude describe phase)
+.env
+.env.*
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Editor and OS files
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Logs
+*.log
+
+# Personal notes
 steps.md

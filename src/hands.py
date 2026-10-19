@@ -1,15 +1,14 @@
-"""Hand tracking and built-in gesture recognition with MediaPipe's Gesture Recognizer (Tasks API).
+"""Hand tracking with MediaPipe's Hand Landmarker (Tasks API).
 
 For each hand in a frame it finds:
 - 21 points ("landmarks"): the wrist, knuckles and fingertips. Each point has x and y (0..1, as a
   fraction of the image width/height) and z (depth, relative to the wrist; smaller = closer).
 - Left or Right hand.
-- One of MediaPipe's 7 built-in gestures (Closed_Fist, Open_Palm, Pointing_Up, Thumb_Down, Thumb_Up,
-  Victory, ILoveYou), or "None" if it isn't making any of them, with a score (0..1).
+It does NOT name gestures: that's done by your own trained model (see train.py and classifier.py).
 
-Model file:  models/gesture_recognizer.task
+Model file:  models/hand_landmarker.task
 Downloaded from:
-https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/latest/gesture_recognizer.task
+https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task
 """
 import time
 from dataclasses import dataclass
@@ -20,13 +19,13 @@ import mediapipe as mp
 import numpy as np
 from mediapipe.tasks.python import BaseOptions
 from mediapipe.tasks.python.vision import (
-    GestureRecognizer,
-    GestureRecognizerOptions,
+    HandLandmarker,
+    HandLandmarkerOptions,
     HandLandmarksConnections,
     RunningMode,
 )
 
-MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "gesture_recognizer.task"
+MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "hand_landmarker.task"
 MAX_HANDS = 2
 MIN_DETECTION_CONFIDENCE = 0.5   # how sure it must be to find a new hand
 MIN_TRACKING_CONFIDENCE = 0.5    # how sure it must be to keep following a hand
@@ -50,17 +49,30 @@ class Hand:
     world_landmarks: np.ndarray  # shape (21, 3): the same points in metres around the hand's centre (for features)
     handedness: str         # "Left" or "Right" (your real hand)
     score: float            # how sure MediaPipe is about Left/Right (0..1)
-    gesture: str            # built-in gesture name, or "None"
-    gesture_score: float    # how sure MediaPipe is about the gesture (0..1)
+    aspect: float           # frame width / height, to turn 0..1 image coordinates into equal units
+
+
+def pair_hands(hands):
+    """For two-hand gestures: return (left_hand, right_hand), or None unless exactly 2 hands are visible.
+
+    Uses the Left/Right labels. If MediaPipe labels both hands the same (it sometimes does), it falls
+    back to screen position: in the mirrored view your right hand is on the right of the screen.
+    """
+    if len(hands) != 2:
+        return None
+    a, b = hands
+    if a.handedness != b.handedness:
+        return (a, b) if a.handedness == "Left" else (b, a)
+    return (a, b) if a.landmarks[0, 0] < b.landmarks[0, 0] else (b, a)
 
 
 class HandTracker:
     def __init__(self, model_path=MODEL_PATH, max_hands=MAX_HANDS):
         if not Path(model_path).exists():
             raise FileNotFoundError(
-                f"Gesture model not found at {model_path}. Download it from the URL at the top of hands.py."
+                f"Hand model not found at {model_path}. Download it from the URL at the top of hands.py."
             )
-        options = GestureRecognizerOptions(
+        options = HandLandmarkerOptions(
             base_options=BaseOptions(model_asset_path=str(model_path)),
             # VIDEO mode tracks hands from frame to frame, which is smoother and faster
             # than detecting them from scratch in every frame.
@@ -70,11 +82,11 @@ class HandTracker:
             min_tracking_confidence=MIN_TRACKING_CONFIDENCE,
         )
         # Load the model once here, never per frame.
-        self.recognizer = GestureRecognizer.create_from_options(options)
+        self.landmarker = HandLandmarker.create_from_options(options)
         self._last_timestamp_ms = -1
 
     def detect(self, frame):
-        """Find hands and their gestures in a frame. Returns a list of Hand (empty if no hands).
+        """Find hands in a frame. Returns a list of Hand (empty if no hands).
 
         The frame should be mirrored (selfie view), as Camera.frames() gives it.
         Left/Right then refer to your real hands (see SWAP_HANDEDNESS).
@@ -89,11 +101,12 @@ class HandTracker:
             timestamp_ms = self._last_timestamp_ms + 1
         self._last_timestamp_ms = timestamp_ms
 
-        result = self.recognizer.recognize_for_video(image, timestamp_ms)
+        result = self.landmarker.detect_for_video(image, timestamp_ms)
+        aspect = frame.shape[1] / frame.shape[0]
 
         hands = []
-        for points, world_points, handedness, gestures in zip(
-            result.hand_landmarks, result.hand_world_landmarks, result.handedness, result.gestures
+        for points, world_points, handedness in zip(
+            result.hand_landmarks, result.hand_world_landmarks, result.handedness
         ):
             landmarks = np.array([[p.x, p.y, p.z] for p in points], dtype=np.float32)
             world_landmarks = np.array([[p.x, p.y, p.z] for p in world_points], dtype=np.float32)
@@ -101,23 +114,18 @@ class HandTracker:
             label = side.category_name
             if SWAP_HANDEDNESS:
                 label = "Right" if label == "Left" else "Left"
-            gesture = gestures[0] if gestures else None
-            hands.append(Hand(
-                landmarks, world_landmarks, label, side.score,
-                gesture.category_name if gesture else "None",
-                gesture.score if gesture else 0.0,
-            ))
+            hands.append(Hand(landmarks, world_landmarks, label, side.score, aspect))
         return hands
 
     def close(self):
-        self.recognizer.close()
+        self.landmarker.close()
 
 
 class GestureSmoother:
     """Stops the displayed gesture from flickering.
 
-    Keeps a separate memory for each hand ("Left" / "Right"). A new gesture is only shown after it
-    has won STABLE_FRAMES frames in a row. Low-score guesses count as "Not sure".
+    Keeps a separate memory for each hand ("Left" / "Right" / "Both"). A new gesture is only shown
+    after it has won STABLE_FRAMES frames in a row. Low-score guesses count as "Not sure".
     """
 
     def __init__(self, threshold=SCORE_THRESHOLD, stable_frames=STABLE_FRAMES):
@@ -165,17 +173,22 @@ def draw_hand(frame, hand, text=None):
     cv2.putText(frame, hand.handedness, (wrist_x - 30, wrist_y + 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, colour, 2)
 
-    # Put the gesture text just above the highest point of the hand.
     if text:
-        top_x = min(x for x, _ in pixels)
-        top_y = max(min(y for _, y in pixels) - 15, 25)   # keep it inside the window
-        _draw_label(frame, text, (top_x, top_y), colour)
+        draw_label_above(frame, [hand], text, colour)
 
 
-def _draw_label(frame, text, origin, colour):
-    """Text on a dark box so it's readable on any background."""
+def draw_label_above(frame, hands, text, colour):
+    """Text on a dark box, centred just above the highest point of one or more hands."""
+    height, width = frame.shape[:2]
+    xs = [x * width for hand in hands for x in hand.landmarks[:, 0]]
+    ys = [y * height for hand in hands for y in hand.landmarks[:, 1]]
+
     font, scale, thickness = cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2
     (text_w, text_h), baseline = cv2.getTextSize(text, font, scale, thickness)
-    x, y = origin
+    # Centre over the hand(s), but keep the whole label inside the window.
+    x = int((min(xs) + max(xs)) / 2 - text_w / 2)
+    x = min(max(x, 4), width - text_w - 4)
+    y = int(max(min(ys) - 15, text_h + 10))
+
     cv2.rectangle(frame, (x - 4, y - text_h - 6), (x + text_w + 4, y + baseline), (0, 0, 0), -1)
     cv2.putText(frame, text, (x, y), font, scale, colour, thickness)
