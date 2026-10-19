@@ -1,0 +1,6 @@
+.venv/
+data/
+models/
+runs/
+__pycache__/
+steps.md
