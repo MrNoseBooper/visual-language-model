@@ -1,2 +1,11 @@
 none
 phone
+bottle
+toothless
+airpods
+serai_liquid_detergent
+serai_floor_cleaner
+serai_fabric_softener
+lemongrass_with_ginger
+lemongrass_with_barley
+lemongrass_with_honey
