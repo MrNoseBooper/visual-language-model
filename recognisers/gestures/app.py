@@ -1,9 +1,9 @@
 """Main app. Shows the live webcam feed, tracks your hands and names YOUR trained gestures.
 
-Run with:  python src/app.py
+Run with:  python main.py gestures run
 
 Keys (click the video window first):
-  R   reload your model (after running train.py again)
+  R   reload your model (after training again)
   Q   quit
 
 One-hand and two-hand gestures are recognised automatically. When both hands are visible, the
@@ -12,10 +12,11 @@ by the one-hand model.
 """
 import cv2
 
-from camera import Camera
-from classifier import GestureModel
-from features import normalise, normalise_two
-from hands import GestureSmoother, HandTracker, draw_hand, draw_label_above, pair_hands
+from common.camera import Camera
+from common.hands import HandTracker, LabelSmoother, draw_hand, draw_label_above, pair_hands
+
+from .classifier import GestureModel
+from .features import normalise, normalise_two
 
 WINDOW_NAME = "Gesture Recognizer (press Q to quit)"
 BOTH_HANDS_COLOUR = (0, 255, 255)   # yellow label for two-hand gestures
@@ -44,7 +45,7 @@ def annotate(frame, hands, model, smoother):
     if model is None:
         for hand in hands:
             draw_hand(frame, hand)
-        return "No gesture model yet: run collect.py, then train.py, then press R"
+        return "No gesture model yet: collect, then train, then press R"
 
     # Two-hand gesture first: if both hands are visible and the two-hand model is confident
     # about a real gesture, show one label over both hands instead of one per hand.
@@ -66,7 +67,7 @@ def annotate(frame, hands, model, smoother):
     if model.one_hand is None:
         for hand in hands:
             draw_hand(frame, hand)
-        return "No one-hand model: train.py needs a one-hand gesture + 'none'" if hands else ""
+        return "No one-hand model: training needs a one-hand gesture + 'none'" if hands else ""
     for hand in hands:
         label, score = model.predict_one(normalise(hand.world_landmarks, hand.handedness))
         shown = smoother.update(hand.handedness, label, score)
@@ -84,7 +85,7 @@ def main():
     camera = Camera()
     tracker = HandTracker()   # loads the hand model once, before the loop
     model = load_model()
-    smoother = GestureSmoother()
+    smoother = LabelSmoother()
     try:
         for frame in camera.frames():
             hands = tracker.detect(frame)
@@ -100,7 +101,7 @@ def main():
                 break
             elif key in (ord("r"), ord("R")):
                 model = load_model()
-                smoother = GestureSmoother()   # start fresh so old labels don't carry over
+                smoother = LabelSmoother()   # start fresh so old labels don't carry over
             # Also stop if the window was closed with the X button.
             if cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE) < 1:
                 break

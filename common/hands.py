@@ -4,9 +4,10 @@ For each hand in a frame it finds:
 - 21 points ("landmarks"): the wrist, knuckles and fingertips. Each point has x and y (0..1, as a
   fraction of the image width/height) and z (depth, relative to the wrist; smaller = closer).
 - Left or Right hand.
-It does NOT name gestures: that's done by your own trained model (see train.py and classifier.py).
+It does NOT name gestures: that's done by the recognisers (recognisers/gestures, and recognisers/items uses
+it to crop around your hand).
 
-Model file:  models/hand_landmarker.task
+Model file:  common/models/hand_landmarker.task
 Downloaded from:
 https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task
 """
@@ -25,7 +26,7 @@ from mediapipe.tasks.python.vision import (
     RunningMode,
 )
 
-MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "hand_landmarker.task"
+MODEL_PATH = Path(__file__).resolve().parent / "models" / "hand_landmarker.task"
 MAX_HANDS = 2
 MIN_DETECTION_CONFIDENCE = 0.5   # how sure it must be to find a new hand
 MIN_TRACKING_CONFIDENCE = 0.5    # how sure it must be to keep following a hand
@@ -33,7 +34,7 @@ MIN_TRACKING_CONFIDENCE = 0.5    # how sure it must be to keep following a hand
 # laptop showed them reversed, so we swap them. Set to False if they ever come out wrong again.
 SWAP_HANDEDNESS = True
 
-# Smoothing (see GestureSmoother below)
+# Smoothing (see LabelSmoother below)
 SCORE_THRESHOLD = 0.6            # below this score, show "Not sure"
 STABLE_FRAMES = 5                # a gesture must win this many frames in a row before it's shown
 
@@ -121,8 +122,8 @@ class HandTracker:
         self.landmarker.close()
 
 
-class GestureSmoother:
-    """Stops the displayed gesture from flickering.
+class LabelSmoother:
+    """Stops the displayed label (gesture or item) from flickering.
 
     Keeps a separate memory for each hand ("Left" / "Right" / "Both"). A new gesture is only shown
     after it has won STABLE_FRAMES frames in a row. Low-score guesses count as "Not sure".

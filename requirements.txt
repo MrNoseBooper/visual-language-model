@@ -1,3 +1,4 @@
+# Shared + hand gestures
 opencv-python
 mediapipe
 numpy
@@ -5,3 +6,8 @@ scikit-learn
 matplotlib
 joblib
 pynput
+
+# Items (CLIP vision-language model). On Windows, pip's torch is the CPU version, which is what this laptop needs.
+torch
+transformers
+pillow

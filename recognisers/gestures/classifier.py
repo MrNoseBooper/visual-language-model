@@ -12,8 +12,9 @@ from pathlib import Path
 import joblib
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent
-MODEL_PATH = ROOT / "models" / "gesture_clf.joblib"
+from . import FOLDER
+
+MODEL_PATH = FOLDER / "models" / "gesture_clf.joblib"
 
 
 class GestureModel:

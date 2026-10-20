@@ -1,4 +1,4 @@
-"""A small reusable webcam helper.
+"""A small reusable webcam helper (shared by every recogniser).
 
 Opens the webcam, gives you mirrored frames one at a time, and keeps track of FPS
 (frames per second) so you can see how fast the app is running.

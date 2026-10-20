@@ -1,8 +1,8 @@
 """Record samples of your own gestures for training. One-hand and two-hand gestures are handled automatically.
 
-Run with:  python src/collect.py
+Run with:  python main.py gestures collect
 
-All gestures are listed in gestures.txt and saved to data/landmarks.csv. Each row is:
+All gestures are listed in labels.txt and saved to data/landmarks.csv (both in this folder). Each row is:
   gesture name, number of hands (1 or 2), which hand ("Left"/"Right", or "both"), time, and the numbers:
   - 1 hand visible  -> 63 numbers from features.normalise() (the remaining columns are left empty)
   - 2 hands visible -> 210 numbers from features.normalise_two()
@@ -11,24 +11,25 @@ train.py then works out which gestures are two-handed from how you recorded them
 Keys (click the video window first):
   SPACE   save one sample
   B       burst mode on/off (saves a sample every BURST_INTERVAL seconds)
-  1-9     switch to that gesture from gestures.txt
+  1-9     switch to that gesture from labels.txt
   Q       quit
 """
 import csv
 import time
 from collections import Counter
 from datetime import datetime
-from pathlib import Path
 
 import cv2
 
-from camera import Camera
-from features import NUM_FEATURES, NUM_TWO_HAND_FEATURES, normalise, normalise_two
-from hands import HandTracker, draw_hand, pair_hands
+from common.camera import Camera
+from common.hands import HandTracker, draw_hand, pair_hands
+from common.labels import choose_label, load_labels
 
-ROOT = Path(__file__).resolve().parent.parent
-GESTURES_FILE = ROOT / "gestures.txt"
-DATA_FILE = ROOT / "data" / "landmarks.csv"
+from . import FOLDER
+from .features import NUM_FEATURES, NUM_TWO_HAND_FEATURES, normalise, normalise_two
+
+GESTURES_FILE = FOLDER / "labels.txt"
+DATA_FILE = FOLDER / "data" / "landmarks.csv"
 HEADER = ["label", "hands", "handedness", "timestamp", *[f"f{i}" for i in range(NUM_TWO_HAND_FEATURES)]]
 BURST_INTERVAL = 0.2        # seconds between samples in burst mode
 SAVED_FLASH_TIME = 0.15     # seconds the green "saved" border stays on screen
@@ -49,39 +50,6 @@ Tips for good samples:
   - Record "none" with ONE hand and with TWO hands: relaxed hands, scratching, typing pose,
     half-made gestures. This teaches the model when you are NOT making a gesture.
 """
-
-
-def load_gestures():
-    if not GESTURES_FILE.exists():
-        return []
-    return [line.strip() for line in GESTURES_FILE.read_text().splitlines() if line.strip()]
-
-
-def add_gesture(name, gestures):
-    """Add a new gesture name to gestures.txt (and the list in memory)."""
-    text = GESTURES_FILE.read_text() if GESTURES_FILE.exists() else ""
-    if text and not text.endswith("\n"):
-        text += "\n"
-    GESTURES_FILE.write_text(text + name + "\n")
-    gestures.append(name)
-    print(f"Added '{name}' to gestures.txt")
-
-
-def choose_gesture(gestures):
-    """Ask in the terminal which gesture to record. A new name is added to gestures.txt."""
-    print("Gestures in gestures.txt:")
-    for number, name in enumerate(gestures, start=1):
-        print(f"  {number}. {name}")
-    while True:
-        answer = input("Type a number, or a new gesture name: ").strip()
-        if answer.isdigit() and 1 <= int(answer) <= len(gestures):
-            return gestures[int(answer) - 1]
-        if answer and not answer.isdigit():
-            name = answer.lower().replace(" ", "_")
-            if name not in gestures:
-                add_gesture(name, gestures)
-            return name
-        print("Please type one of the numbers above, or a name.")
 
 
 def count_samples():
@@ -156,8 +124,8 @@ def draw_status(frame, label, counts, burst, num_hands):
 
 
 def main():
-    gestures = load_gestures()
-    label = choose_gesture(gestures)
+    gestures = load_labels(GESTURES_FILE)
+    label = choose_label(GESTURES_FILE, gestures)
     counts = count_samples()
     print(TIPS)
     print(f"Recording '{label}'. Click the video window, then use the keys shown at the bottom.")

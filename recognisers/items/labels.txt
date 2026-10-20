@@ -1,0 +1,7 @@
+none
+phone
+water_bottle
+mug
+pen
+keys
+wallet
