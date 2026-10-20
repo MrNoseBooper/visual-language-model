@@ -4,9 +4,10 @@ Webcam recognisers that run on a laptop CPU (no NVIDIA GPU needed), all started 
 
 - **Hand gestures**: MediaPipe finds your hands; a small model trained on your own samples names one- and
   two-hand gestures (one-hand vs two-hand is worked out automatically).
-- **Items**: CLIP, a vision-language model, names the item you show the camera. It works with no training
-  (zero-shot, from the names in `labels.txt`) and gets more accurate after training on your own photos.
-  It looks around your hand when one is visible, otherwise at the centre of the view.
+- **Items**: names the item you show the camera, learned only from your own photos. CLIP's picture encoder
+  turns each photo into numbers and a small model trained on your photos names them; no item names are
+  built in, so it recognises nothing until you train it. It looks around your hand when one is visible,
+  otherwise at the centre of the view.
 
 ## Setup (Windows, Python 3.12)
 
@@ -20,7 +21,8 @@ python main.py check
 Download MediaPipe's hand model into `common/models/`:
 https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task
 
-CLIP (about 600 MB) downloads by itself into `recognisers/items/models/clip/` the first time the item recogniser runs.
+CLIP's picture encoder (one ~600 MB file) downloads by itself into `recognisers/items/models/clip/` the first
+time you train the item recogniser.
 
 ## Use
 
@@ -36,7 +38,7 @@ python main.py items run           # live item recognition
 
 Add `none` samples to every recogniser (relaxed hands / no item), so it learns when there's nothing to recognise.
 
-**Keys in the live apps:** Q quit, R reload labels/model. Items also: M zero-shot vs trained, C crop mode
+**Keys in the live apps:** Q quit, R reload the trained model. Items also: C crop mode
 (auto / hand / centre). **Collecting:** SPACE save, B burst mode, 1-9 switch label (items: C crop mode).
 
 ## Layout

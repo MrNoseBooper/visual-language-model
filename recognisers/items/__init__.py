@@ -1,15 +1,16 @@
-"""Item recogniser: names the item you show the camera, using CLIP (a vision-language model).
+"""Item recogniser: names the item you show the camera, learned ONLY from your own photos.
 
-It works with NO training ("zero-shot"): CLIP compares the picture with each name in labels.txt.
-After you collect photos of your own items and train, a small model learns them and gets more accurate.
+CLIP's picture encoder turns each photo into 512 numbers; a small model trained on your photos
+(data/<label>/) learns which numbers belong to which item. No item names are built in: nothing is
+recognised until you collect photos and train.
 It looks around your hand when one is visible, otherwise at the centre of the view (press C to switch).
 
 Everything about it lives in this folder:
   app.py           live recognition
   collect.py       record photos of your items
   train.py         train on your photos
-  clip_model.py    loads CLIP and turns pictures/text into numbers ("embeddings")
-  predictor.py     zero-shot and trained ways of naming the item
+  clip_model.py    loads CLIP's picture encoder: turns pictures into numbers ("embeddings")
+  predictor.py     loads your trained model and names the item
   crop.py          picks which part of the picture to look at (hand or centre)
   labels.txt       your item names, one per line
   data/            <label>/*.jpg: your photos (not in git)
@@ -22,5 +23,5 @@ from pathlib import Path
 
 FOLDER = Path(__file__).resolve().parent
 NAME = "Items"
-DESCRIPTION = "names items you show the camera (CLIP vision-language model; works untrained, better trained)"
+DESCRIPTION = "names items you show the camera, learned only from your own photos (CLIP picture encoder)"
 # main.py runs app.py / collect.py / train.py's main() when you pick run / collect / train.

@@ -7,10 +7,10 @@ Run with:  python main.py items train
      only new or changed photos need CLIP (training again is then very quick).
   3. Picks and tests the best small model on those numbers (common/training.py: train / validation /
      test split, three model types, confusion matrix saved to runs/).
-  4. Saves it to models/probe.joblib. The app uses it when you press M (or by default once it exists).
+  4. Saves it to models/probe.joblib, which the live app uses.
 
-This "CLIP numbers + small model" approach is called a linear probe: CLIP already knows what things
-look like, so a few dozen photos per item are often enough.
+This "CLIP numbers + small model" approach is called a linear probe. CLIP's picture encoder knows no item
+names, but it describes pictures well, so a few dozen of your photos per item are often enough.
 """
 import joblib
 import numpy as np
