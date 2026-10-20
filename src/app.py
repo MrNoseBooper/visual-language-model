@@ -63,10 +63,11 @@ def annotate(frame, hands, model, smoother):
             return ""
 
     # Otherwise, one label per hand from the one-hand model.
-    for hand in hands:
-        if model.one_hand is None:
+    if model.one_hand is None:
+        for hand in hands:
             draw_hand(frame, hand)
-            continue
+        return "No one-hand model: train.py needs a one-hand gesture + 'none'" if hands else ""
+    for hand in hands:
         label, score = model.predict_one(normalise(hand.world_landmarks, hand.handedness))
         shown = smoother.update(hand.handedness, label, score)
         draw_hand(frame, hand, label_text(shown, label, score))

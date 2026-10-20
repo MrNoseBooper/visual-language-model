@@ -26,7 +26,7 @@ actions.json  gesture -> action mapping
 - One normalise() (one hand, 63 numbers) and one normalise_two() (two hands, 210 numbers) in features.py, used by
   collect, train and app. Never duplicate them. Two-hand pairs are ordered with hands.pair_hands().
 - One-hand vs two-hand is automatic, never a user switch: collect saves 1- or 2-hand samples by how many hands
-  are visible; train marks a gesture two-handed if most samples are 2-hand, and saves a one-hand and a two-hand
+  are visible; train marks a gesture two-handed if >= 80% of samples are 2-hand (TWO_HAND_SHARE), and saves a one-hand and a two-hand
   model together in models/gesture_clf.joblib; app tries the two-hand model first when both hands are visible.
 - Load models once, never per frame. Heavy or network work goes in a background thread.
 - Secrets (API keys) only from environment variables.

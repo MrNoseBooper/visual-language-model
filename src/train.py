@@ -3,7 +3,7 @@
 Run with:  python src/train.py
 
 Reads data/landmarks.csv and works out by itself which gestures are two-handed: a gesture is
-two-handed if most of its samples were recorded with both hands in view. It then trains two models
+two-handed if almost all (TWO_HAND_SHARE) of its samples were recorded with both hands in view. It then trains two models
 and saves them together in models/gesture_clf.joblib:
   - one-hand model: names a single hand's gesture (from the 1-hand samples of one-hand gestures + "none").
   - two-hand model: when both hands are visible, says which two-hand gesture they make, or "none".
@@ -44,6 +44,9 @@ NO_GESTURE = "none"
 RANDOM_SEED = 42           # fixed, so the split and results are the same every run
 VALIDATION_SHARE = 0.15
 TEST_SHARE = 0.15
+# A gesture is two-handed only if at least this share of its samples have both hands in view.
+# Kept high so a one-hand gesture you also recorded with both hands up (e.g. two open palms) stays one-handed.
+TWO_HAND_SHARE = 0.8
 MIN_SAMPLES_PER_GESTURE = 10    # fewer than this and the split can't work
 FEW_SAMPLES_WARNING = 30        # fewer than this and results will be unreliable
 
@@ -72,11 +75,12 @@ def load_samples(path):
 
 
 def find_two_handed(samples):
-    """Gestures (other than "none") recorded mostly with two hands. Prints a table of what it found."""
+    """Gestures (other than "none") recorded almost only with two hands. Prints a table of what it found."""
     counts = Counter((label, hands) for label, hands, _ in samples)
     labels = sorted({label for label, _, _ in samples})
     two_handed = {label for label in labels
-                  if label != NO_GESTURE and counts[(label, 2)] > counts[(label, 1)]}
+                  if label != NO_GESTURE
+                  and counts[(label, 2)] >= TWO_HAND_SHARE * (counts[(label, 1)] + counts[(label, 2)])}
 
     print(f"  {'gesture':15s} {'1-hand':>7s} {'2-hand':>7s}   type")
     for label in labels:
