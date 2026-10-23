@@ -10,13 +10,14 @@ Or go straight to an action:
   python main.py items run           live item recognition (CLIP)
   python main.py items collect       record item photos
   python main.py items train         train the item model
-  python main.py check               check libraries and webcam
+  python main.py faces run           live face tracing (no training)
+  python main.py check              check libraries and webcam
 
 Each recogniser lives in its own folder under recognisers/ (see recognisers/__init__.py).
 """
 import argparse
 
-from recognisers import RECOGNISERS, action_main, load
+from recognisers import RECOGNISERS, action_main, actions, load
 
 ACTIONS = {
     "run": "Run live recognition",
@@ -63,7 +64,8 @@ def menu():
             check()
             continue
         while True:
-            action = ask(f"{load(recogniser_key).NAME}: what do you want to do?", list(ACTIONS.items()))
+            action = ask(f"{load(recogniser_key).NAME}: what do you want to do?",
+                         [(action, ACTIONS[action]) for action in actions(recogniser_key)])
             if action is None:
                 break
             # Stay in the menu if e.g. the webcam is busy. Direct commands still crash with the full error.
@@ -84,8 +86,8 @@ def main():
         menu()
     elif args.recogniser == "check":
         check()
-    elif args.action is None:
-        parser.error(f"choose an action for {args.recogniser}: {', '.join(ACTIONS)}")
+    elif args.action not in actions(args.recogniser):   # also catches a missing action
+        parser.error(f"choose an action for {args.recogniser}: {', '.join(actions(args.recogniser))}")
     else:
         do(args.recogniser, args.action)
 

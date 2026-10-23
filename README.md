@@ -8,6 +8,8 @@ Webcam recognisers that run on a laptop CPU (no NVIDIA GPU needed), all started 
   turns each photo into numbers and a small model trained on your photos names them; no item names are
   built in, so it recognises nothing until you train it. It looks around your hand when one is visible,
   otherwise at the centre of the view.
+- **Face tracer**: MediaPipe finds the points of your face and draws its lines live (outline, eyes, eyebrows,
+  lips, irises). Nothing to train.
 
 ## Setup (Windows, Python 3.12)
 
@@ -20,6 +22,9 @@ python main.py check
 
 Download MediaPipe's hand model into `common/models/`:
 https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task
+
+For the face tracer, download MediaPipe's face model into `recognisers/faces/models/`:
+https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task
 
 CLIP's picture encoder (one ~600 MB file) downloads by itself into `recognisers/items/models/clip/` the first
 time you train the item recogniser.
@@ -34,6 +39,7 @@ python main.py gestures run        # live gesture recognition
 python main.py items collect       # record item photos
 python main.py items train         # train the item model
 python main.py items run           # live item recognition
+python main.py faces run           # live face tracing
 ```
 
 Add `none` samples to every recogniser (relaxed hands / no item), so it learns when there's nothing to recognise.
@@ -49,6 +55,7 @@ common/                   shared: camera, hand tracker, training steps, label li
 recognisers/
   gestures/               everything about hand gestures: code, labels.txt, data/, models/, runs/
   items/                  everything about items: code, labels.txt, data/, models/, runs/
+  faces/                  face tracer: app.py, models/
 ```
 
 Recordings (`data/`), models (`models/`) and training outputs (`runs/`) stay on your computer and are not in git.

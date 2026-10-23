@@ -1,11 +1,12 @@
 # Visual recognisers: notes for Claude
 
-Python webcam apps on one master file. Two recognisers, each in its own folder with everything about it:
+Python webcam apps on one master file. Three recognisers, each in its own folder with everything about it:
 - **gestures**: MediaPipe Hand Landmarker finds the hands; my own scikit-learn models name one- and two-hand
   gestures. No MediaPipe built-in gestures.
 - **items**: names the item shown, learned ONLY from my own photos: CLIP's picture encoder (openai/clip-vit-base-patch32,
   vision half only) turns photos into 512 numbers, a linear probe trained on my photos names them. NO zero-shot / no
   text prompts / no built-in item names (my decision). Looks around the hand if visible, else the centre (C key).
+- **faces**: MediaPipe Face Landmarker draws the face's lines live. Run only: no collect / train yet (my decision).
 Later stages (gestures): optional dynamic gestures (swipes, wave) → gestures trigger keyboard actions.
 
 ## Me and my machine
@@ -14,10 +15,11 @@ Later stages (gestures): optional dynamic gestures (swipes, wave) → gestures t
 - Laptop: Intel Core Ultra 7 258V (Arc 140V iGPU + NPU). No NVIDIA GPU / no CUDA. Everything should run on CPU.
 
 ## Structure
-main.py                 master file: menu, or `python main.py <gestures|items> <run|collect|train>`, `python main.py check`
+main.py                 master file: menu, or `python main.py <gestures|items|faces> <run|collect|train>`, `python main.py check`
 common/                 shared: camera.py, hands.py (tracker, LabelSmoother, drawing), training.py (train_best),
                         labels.py (labels.txt helpers), check_setup.py, models/hand_landmarker.task
-recognisers/__init__.py RECOGNISERS registry (key -> package), ACTION_MODULES (run->app, collect, train)
+recognisers/__init__.py RECOGNISERS registry (key -> package), ACTION_MODULES (run->app, collect, train),
+                        actions(key): the ones whose file exists (collect/train optional)
 tests/                  unittest checks: `python -m unittest discover tests`
 recognisers/<name>/     __init__.py (FOLDER, NAME, DESCRIPTION only), app.py / collect.py / train.py (each has main()),
                         labels.txt, data/, models/, runs/  (data/models/runs not in git)
@@ -25,6 +27,7 @@ recognisers/<name>/     __init__.py (FOLDER, NAME, DESCRIPTION only), app.py / c
                         models/gesture_clf.joblib
   items/                + clip_model.py, predictor.py (ItemModel), crop.py; data/<label>/*.jpg,
                         models/clip/ (HF cache), models/probe.joblib, runs/embeddings.npz
+  faces/                app.py only; models/face_landmarker.task
 
 ## Conventions
 - Run everything through main.py (imports are package-style: `from common.x import ...`, `from .x import ...`).
