@@ -6,3 +6,6 @@ peace
 fist
 back_palm
 rock
+thumbs_up
+thumbs_down
+three
