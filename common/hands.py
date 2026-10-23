@@ -56,15 +56,21 @@ class Hand:
 def pair_hands(hands):
     """For two-hand gestures: return (left_hand, right_hand), or None unless exactly 2 hands are visible.
 
-    Uses the Left/Right labels. If MediaPipe labels both hands the same (it sometimes does), it falls
-    back to screen position: in the mirrored view your right hand is on the right of the screen.
+    Uses the Left/Right labels (HandTracker.detect() makes sure two hands never share one).
     """
     if len(hands) != 2:
         return None
     a, b = hands
-    if a.handedness != b.handedness:
-        return (a, b) if a.handedness == "Left" else (b, a)
-    return (a, b) if a.landmarks[0, 0] < b.landmarks[0, 0] else (b, a)
+    return (a, b) if a.handedness == "Left" else (b, a)
+
+
+def relabel_same_side(hands):
+    """MediaPipe sometimes labels both hands the same. Then use screen position instead:
+    in the mirrored view your left hand is the one further left. Changes the hands in place.
+    """
+    if len(hands) == 2 and hands[0].handedness == hands[1].handedness:
+        left, right = sorted(hands, key=lambda hand: hand.landmarks[0, 0])
+        left.handedness, right.handedness = "Left", "Right"
 
 
 class HandTracker:
@@ -116,6 +122,7 @@ class HandTracker:
             if SWAP_HANDEDNESS:
                 label = "Right" if label == "Left" else "Left"
             hands.append(Hand(landmarks, world_landmarks, label, side.score, aspect))
+        relabel_same_side(hands)
         return hands
 
     def close(self):

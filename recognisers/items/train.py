@@ -12,6 +12,7 @@ Run with:  python main.py items train
 This "CLIP numbers + small model" approach is called a linear probe. CLIP's picture encoder knows no item
 names, but it describes pictures well, so a few dozen of your photos per item are often enough.
 """
+import cv2
 import joblib
 import numpy as np
 
@@ -37,8 +38,8 @@ def find_photos():
 
 
 def cache_key(path):
-    """Photo name + when it was last changed: if either changes, CLIP runs on it again."""
-    return f"{path.relative_to(DATA_DIR).as_posix()}|{path.stat().st_mtime_ns}"
+    """CLIP model + photo name + when it was last changed: if any changes, CLIP runs on it again."""
+    return f"{MODEL_NAME}|{path.relative_to(DATA_DIR).as_posix()}|{path.stat().st_mtime_ns}"
 
 
 def load_cache():
@@ -56,7 +57,6 @@ def save_cache(cache):
 
 def read_photo(path):
     """Read a photo (fromfile + imdecode instead of imread, so any folder name works on Windows)."""
-    import cv2
     return cv2.imdecode(np.fromfile(str(path), dtype=np.uint8), cv2.IMREAD_COLOR)
 
 
@@ -65,6 +65,7 @@ def embed_new_photos(photos, cache):
     new = [path for path, _ in photos if cache_key(path) not in cache]
     if not new:
         return 0
+    added = 0
     from .clip_model import BATCH_SIZE, Clip
     clip = Clip()
     print(f"Running CLIP on {len(new)} new photos ...")
@@ -78,8 +79,9 @@ def embed_new_photos(photos, cache):
             embeddings = clip.embed_images([image for _, image in readable])
             for (path, _), embedding in zip(readable, embeddings):
                 cache[cache_key(path)] = embedding
+            added += len(readable)
         print(f"  {min(start + BATCH_SIZE, len(new))}/{len(new)}")
-    return len(new)
+    return added
 
 
 def main():

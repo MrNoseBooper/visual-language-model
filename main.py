@@ -66,7 +66,11 @@ def menu():
             action = ask(f"{load(recogniser_key).NAME}: what do you want to do?", list(ACTIONS.items()))
             if action is None:
                 break
-            do(recogniser_key, action)
+            # Stay in the menu if e.g. the webcam is busy. Direct commands still crash with the full error.
+            try:
+                do(recogniser_key, action)
+            except (RuntimeError, FileNotFoundError) as error:
+                print(f"\nProblem: {error}")
 
 
 def main():

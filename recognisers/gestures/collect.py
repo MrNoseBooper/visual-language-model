@@ -12,6 +12,7 @@ Keys (click the video window first):
   SPACE   save one sample
   B       burst mode on/off (saves a sample every BURST_INTERVAL seconds)
   1-9     switch to that gesture from labels.txt
+  N       next gesture (also reaches the ones after 9)
   Q       quit
 """
 import csv
@@ -113,7 +114,7 @@ def draw_status(frame, label, counts, burst, num_hands):
     cv2.putText(frame, f"1-hand {one} | 2-hand {two}", (width - 260, height - 52),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, count_colour, 2)
     burst_text = "ON" if burst else "off"
-    cv2.putText(frame, f"SPACE save | B burst: {burst_text} | 1-9 switch | Q quit",
+    cv2.putText(frame, f"SPACE save | B burst: {burst_text} | 1-9/N switch | Q quit",
                 (10, height - 18), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 200, 200), 1)
     # Top-left: what a save would record right now.
     if num_hands == 0:
@@ -160,6 +161,10 @@ def main():
                     label = gestures[number]
                     burst = False   # stop bursting so the new gesture doesn't get wrong samples
                     print(f"Switched to '{label}'")
+            elif key in (ord("n"), ord("N")):
+                label = gestures[(gestures.index(label) + 1) % len(gestures)]
+                burst = False
+                print(f"Switched to '{label}'")
             elif key in (ord("q"), ord("Q")):
                 break
 

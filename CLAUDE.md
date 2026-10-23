@@ -18,6 +18,7 @@ main.py                 master file: menu, or `python main.py <gestures|items> <
 common/                 shared: camera.py, hands.py (tracker, LabelSmoother, drawing), training.py (train_best),
                         labels.py (labels.txt helpers), check_setup.py, models/hand_landmarker.task
 recognisers/__init__.py RECOGNISERS registry (key -> package), ACTION_MODULES (run->app, collect, train)
+tests/                  unittest checks: `python -m unittest discover tests`
 recognisers/<name>/     __init__.py (FOLDER, NAME, DESCRIPTION only), app.py / collect.py / train.py (each has main()),
                         labels.txt, data/, models/, runs/  (data/models/runs not in git)
   gestures/             + features.py (normalise / normalise_two), classifier.py; data/landmarks.csv,

@@ -22,9 +22,9 @@ from common.training import train_best
 
 from . import FOLDER
 from .classifier import MODEL_PATH
+from .collect import DATA_FILE
 from .features import NUM_FEATURES, NUM_TWO_HAND_FEATURES
 
-DATA_FILE = FOLDER / "data" / "landmarks.csv"
 RUNS_DIR = FOLDER / "runs"
 NO_GESTURE = "none"
 # A gesture is two-handed only if at least this share of its samples have both hands in view.

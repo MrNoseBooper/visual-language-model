@@ -4,8 +4,6 @@ Run with:  python main.py check
 """
 import sys
 
-CAMERA_INDEX = 0  # 0 = the default (built-in) webcam
-
 
 def version_of(module_name):
     """The library's version, or a note if it isn't installed."""
@@ -22,14 +20,17 @@ def main():
                               ("PyTorch", "torch"), ("Transformers", "transformers")]:
         print(f"{name:13s}: {version_of(module_name)}")
 
-    import cv2
-    # Try to open the webcam and grab one frame.
-    # CAP_DSHOW uses Windows' DirectShow backend, which usually opens faster on Windows.
-    cap = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_DSHOW)
-    ok, frame = cap.read()
-    cap.release()
+    # Open the webcam exactly like the apps do, and grab one frame.
+    from common.camera import Camera
+    try:
+        camera = Camera()
+    except RuntimeError as error:
+        print(f"webcam FAILED: {error}")
+        return
+    frame = next(camera.frames(), None)
+    camera.release()
 
-    if ok:
+    if frame is not None:
         height, width = frame.shape[:2]
         print(f"webcam OK ({width}x{height})")
     else:

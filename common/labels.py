@@ -1,4 +1,8 @@
 """Label lists (labels.txt, one name per line), shared by every recogniser's collect step."""
+import re
+
+# Names become folder names (items) and CSV values (gestures): keep them to letters, digits and _.
+VALID_NAME = r"[a-z0-9_]+"
 
 
 def load_labels(path):
@@ -29,6 +33,9 @@ def choose_label(path, labels):
             return labels[int(answer) - 1]
         if answer and not answer.isdigit():
             name = answer.lower().replace(" ", "_")
+            if not re.fullmatch(VALID_NAME, name):
+                print("Names can only use letters a-z, digits and _ (spaces become _).")
+                continue
             if name not in labels:
                 add_label(path, name, labels)
             return name

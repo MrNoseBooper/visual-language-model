@@ -9,6 +9,7 @@ Keys (click the video window first):
   SPACE   save one photo
   B       burst mode on/off (saves a photo every BURST_INTERVAL seconds)
   1-9     switch to that label from labels.txt
+  N       next label (also reaches the ones after 9)
   C       crop mode: Auto (hand, else centre) -> Hand only -> Centre only
   Q       quit
 """
@@ -17,7 +18,6 @@ import uuid
 from datetime import datetime
 
 import cv2
-import numpy as np
 
 from common.camera import Camera
 from common.hands import HandTracker
@@ -76,7 +76,7 @@ def draw_status(frame, label, count, burst, crop_mode, message):
     cv2.putText(frame, f"Item: {label}", (10, height - 52), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
     cv2.putText(frame, f"Photos: {count}", (width - 180, height - 52), cv2.FONT_HERSHEY_SIMPLEX, 0.7, count_colour, 2)
     burst_text = "ON" if burst else "off"
-    cv2.putText(frame, f"SPACE save | B burst: {burst_text} | 1-9 switch | C crop | Q quit",
+    cv2.putText(frame, f"SPACE save | B burst: {burst_text} | 1-9/N switch | C crop | Q quit",
                 (10, height - 18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
     cv2.putText(frame, f"Crop: {MODE_NAMES[crop_mode]}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
     if message:
@@ -117,6 +117,10 @@ def main():
                     label = labels[number]
                     burst = False   # stop bursting so the new label doesn't get wrong photos
                     print(f"Switched to '{label}'")
+            elif key in (ord("n"), ord("N")):
+                label = labels[(labels.index(label) + 1) % len(labels)]
+                burst = False
+                print(f"Switched to '{label}'")
             elif key in (ord("c"), ord("C")):
                 crop_mode = next_mode(crop_mode)
             elif key in (ord("q"), ord("Q")):

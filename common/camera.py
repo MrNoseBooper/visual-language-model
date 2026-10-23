@@ -33,6 +33,7 @@ class Camera:
         while True:
             ok, frame = self.cap.read()
             if not ok:
+                print("The webcam stopped sending pictures (unplugged, or taken by another app?).")
                 break
 
             # Flip left-right so it behaves like a mirror (selfie view).
